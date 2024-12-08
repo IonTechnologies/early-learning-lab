@@ -2,8 +2,6 @@ import { BaseBricksScene } from "./BaseBricksScene.ts";
 import {
   AQUA,
   BLACK,
-  BUILD_AREA_LEFT,
-  BUILD_AREA_TOP,
   FUSCHIA,
   HALF_WIDTH,
   LIME,
@@ -11,7 +9,10 @@ import {
   RED,
   TARGET_LEFT,
   TARGET_TOP,
-  TILE_SIZE,
+  BUILD_AREA_LEFT,
+  BUILD_AREA_TOP,
+  TILE_SIZE_TARGET,
+  TILE_SIZE_BUILD,
   YELLOW,
 } from "../constants.ts";
 import Pointer = Phaser.Input.Pointer;
@@ -22,16 +23,27 @@ export class Level1 extends BaseBricksScene {
   private readonly rows = 2;
   private readonly cols = 3;
   private colours = [FUSCHIA, AQUA, LIME, YELLOW, RED, ORANGE];
+  private targetTileXOffsets = [
+    TILE_SIZE_TARGET,
+    2 * TILE_SIZE_TARGET,
+    3 * TILE_SIZE_TARGET,
+    4 * TILE_SIZE_TARGET,
+    5 * TILE_SIZE_TARGET,
+    6 * TILE_SIZE_TARGET,
+  ];
+  private targetTileYOffsets = [10, 20, 30, 40, 50, 60];
+  private TargetTiles: Phaser.GameObjects.GameObject[] = [];
+
   private buildTileXOffsets = [
-    TILE_SIZE,
-    2 * TILE_SIZE,
-    3 * TILE_SIZE,
-    4 * TILE_SIZE,
-    5 * TILE_SIZE,
-    6 * TILE_SIZE,
+    TILE_SIZE_BUILD,
+    1 * TILE_SIZE_BUILD,
+    2 * TILE_SIZE_BUILD,
+    3 * TILE_SIZE_BUILD,
+    4 * TILE_SIZE_BUILD,
+    5 * TILE_SIZE_BUILD,
   ];
   private buildTileYOffsets = [10, 20, 30, 40, 50, 60];
-  private allTiles: Phaser.GameObjects.GameObject[] = [];
+  private BuildTiles: Phaser.GameObjects.GameObject[] = [];
 
   constructor() {
     super(
@@ -50,27 +62,21 @@ export class Level1 extends BaseBricksScene {
   create() {
     super.create();
     const BORDER = 4;
-    const tileBoxes = this.add.graphics({
+    const TARGET_tileBoxes = this.add.graphics({
       lineStyle: {
         width: BORDER,
         color: BLACK,
       },
     });
-    tileBoxes.strokeRect(
+    TARGET_tileBoxes.strokeRect(
       TARGET_LEFT - BORDER / 2,
       TARGET_TOP - BORDER / 2,
-      this.cols * TILE_SIZE + BORDER,
-      this.rows * TILE_SIZE + BORDER,
+      this.cols * TILE_SIZE_TARGET + BORDER,
+      this.rows * TILE_SIZE_TARGET + BORDER,
     );
-    tileBoxes.strokeRect(
-      BUILD_AREA_LEFT - BORDER / 2,
-      BUILD_AREA_TOP - BORDER / 2,
-      this.cols * TILE_SIZE + BORDER,
-      this.rows * TILE_SIZE + BORDER,
-    );
-    for (let tileIndex = 1; tileIndex <= this.rows * this.cols; tileIndex++) {
+    for (let TARGET_tileIndex = 1; TARGET_tileIndex <= this.rows * this.cols; TARGET_tileIndex++) {
       // Create a texture for each tile, so we can use it to create sprites
-      const colour = this.colours[tileIndex - 1];
+      const colour = this.colours[TARGET_tileIndex - 1];
       this.add
         .graphics({
           fillStyle: {
@@ -78,10 +84,36 @@ export class Level1 extends BaseBricksScene {
           },
         })
         .setVisible(false)
-        .fillRect(0, 0, TILE_SIZE, TILE_SIZE)
-        .generateTexture("" + colour, TILE_SIZE, TILE_SIZE);
+        .fillRect(0, 0, TILE_SIZE_TARGET, TILE_SIZE_TARGET)
+        .generateTexture("" + colour, TILE_SIZE_TARGET, TILE_SIZE_TARGET);
+    }
+    const BUILD_tileBoxes = this.add.graphics({
+      lineStyle: {
+        width: BORDER,
+        color: BLACK,
+      },
+    });
+    BUILD_tileBoxes.strokeRect(
+      BUILD_AREA_LEFT - BORDER / 2,
+      BUILD_AREA_TOP - BORDER / 2,
+      this.cols * TILE_SIZE_BUILD + BORDER,
+      this.rows * TILE_SIZE_BUILD + BORDER,
+    );
+    for (let BUILD_tileIndex = 1; BUILD_tileIndex <= this.rows * this.cols; BUILD_tileIndex++) {
+      // Create a texture for each tile, so we can use it to create sprites
+      const colour = this.colours[BUILD_tileIndex - 1];
+      this.add
+        .graphics({
+          fillStyle: {
+            color: colour,
+          },
+        })
+        .setVisible(false)
+        .fillRect(0, 0, TILE_SIZE_BUILD, TILE_SIZE_BUILD)
+        .generateTexture("" + colour, TILE_SIZE_BUILD, TILE_SIZE_BUILD);
     }
 
+    
     const resetButton = this.add.graphics();
     resetButton.lineStyle(2, BLACK);
     resetButton.fillStyle(ORANGE);
@@ -110,6 +142,8 @@ export class Level1 extends BaseBricksScene {
 
   private resetTileSeedData() {
     Phaser.Utils.Array.Shuffle(this.colours);
+    Phaser.Utils.Array.Shuffle(this.targetTileXOffsets);
+    Phaser.Utils.Array.Shuffle(this.targetTileYOffsets);
     Phaser.Utils.Array.Shuffle(this.buildTileXOffsets);
     Phaser.Utils.Array.Shuffle(this.buildTileYOffsets);
   }
@@ -117,33 +151,35 @@ export class Level1 extends BaseBricksScene {
   private resetTiles() {
     this.resetTileSeedData();
     this.removeExistingTiles();
-    for (let tileIndex = 1; tileIndex <= this.rows * this.cols; tileIndex++) {
-      const colour = this.colours[tileIndex - 1];
+    for (let TARGET_tileIndex = 1; TARGET_tileIndex <= this.rows * this.cols; TARGET_tileIndex++) {
+      const colour = this.colours[TARGET_tileIndex - 1];
 
       // Target tile
       const targetTile = this.add
         .sprite(
-          TARGET_LEFT + (tileIndex % this.cols) * TILE_SIZE,
-          TARGET_TOP + (tileIndex % this.rows) * TILE_SIZE,
+          TARGET_LEFT + (TARGET_tileIndex % this.cols) * TILE_SIZE_TARGET,
+          TARGET_TOP + (TARGET_tileIndex % this.rows) * TILE_SIZE_TARGET,
           "" + colour,
         )
         .setOrigin(0, 0);
-      this.allTiles.push(targetTile);
-
+      this.TargetTiles.push(targetTile);
+    }
+    for (let BUILD_tileIndex = 1; BUILD_tileIndex <= this.rows * this.cols; BUILD_tileIndex++) {
+      const colour = this.colours[BUILD_tileIndex - 1];
       // drop zone in build area for this tile
       const zone = this.add
         .zone(
-          BUILD_AREA_LEFT + (tileIndex % this.cols) * TILE_SIZE + TILE_SIZE / 2,
-          BUILD_AREA_TOP + (tileIndex % this.rows) * TILE_SIZE + TILE_SIZE / 2,
-          TILE_SIZE,
-          TILE_SIZE,
+          BUILD_AREA_LEFT + (BUILD_tileIndex % this.cols) * TILE_SIZE_BUILD + TILE_SIZE_BUILD / 2,
+          BUILD_AREA_TOP + (BUILD_tileIndex % this.rows) * TILE_SIZE_BUILD + TILE_SIZE_BUILD / 2,
+          TILE_SIZE_BUILD,
+          TILE_SIZE_BUILD,
         )
-        .setRectangleDropZone(TILE_SIZE, TILE_SIZE)
+        .setRectangleDropZone(TILE_SIZE_BUILD, TILE_SIZE_BUILD)
         // make sure the zones are always underneath the tiles, so tiles can be
         // picked up and dragged even after being dropped on a zone (don't let
         // the zone intercept the pointer interactions)
         .setToBack();
-      this.allTiles.push(zone);
+      this.BuildTiles.push(zone);
 
       //  Just a visual display of the drop zone, for debugging
       // const graphics = this.add.graphics();
@@ -157,11 +193,11 @@ export class Level1 extends BaseBricksScene {
 
       const buildTile = this.add
         .sprite(
-          TARGET_LEFT + this.buildTileXOffsets[tileIndex - 1] + tileIndex * 10,
-          TARGET_TOP +
-            3 * TILE_SIZE +
-            this.buildTileYOffsets[tileIndex - 1] +
-            tileIndex * 3,
+          BUILD_AREA_LEFT + this.buildTileXOffsets[BUILD_tileIndex - 1] + BUILD_tileIndex * 10,
+          BUILD_AREA_TOP +
+            3 * TILE_SIZE_BUILD +
+            this.buildTileYOffsets[BUILD_tileIndex - 1] +
+            BUILD_tileIndex * 3,
           "" + colour,
         )
         .setOrigin(0, 0)
@@ -179,11 +215,10 @@ export class Level1 extends BaseBricksScene {
           buildTile.y = dropZone.y - dropZone.input?.hitArea.height / 2;
           // FIXME disable drop zones when there is a tile snapped to it, and enable them again if it leaves
         });
-      this.allTiles.push(buildTile);
+      this.BuildTiles.push(buildTile);
     }
   }
-
   private removeExistingTiles() {
-    this.allTiles.forEach((item) => item.destroy());
+    this.BuildTiles.forEach((item) => item.destroy());
   }
 }

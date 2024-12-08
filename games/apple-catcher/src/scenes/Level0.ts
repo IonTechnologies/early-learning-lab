@@ -70,6 +70,7 @@ export class Level0 extends AbstractCatcherScene<Level0ScoringData> {
     this.basket = this.physics.add
       .staticSprite(HALF_WIDTH, BASKET_BOTTOM, "basket")
       .setInteractive({ draggable: true })
+      .setDisplaySize(100, 100)
       .on("drag", (_pointer: Pointer, dragX: number, dragY: number) => {
         this.basket.setPosition(dragX, dragY);
         this.basket.refreshBody();
