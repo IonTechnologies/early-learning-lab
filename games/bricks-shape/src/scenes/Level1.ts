@@ -36,11 +36,11 @@ export class Level1 extends BaseBricksScene {
 
   private buildTileXOffsets = [
     TILE_SIZE_BUILD,
+    1 * TILE_SIZE_BUILD,
     2 * TILE_SIZE_BUILD,
     3 * TILE_SIZE_BUILD,
     4 * TILE_SIZE_BUILD,
     5 * TILE_SIZE_BUILD,
-    6 * TILE_SIZE_BUILD,
   ];
   private buildTileYOffsets = [10, 20, 30, 40, 50, 60];
   private BuildTiles: Phaser.GameObjects.GameObject[] = [];
